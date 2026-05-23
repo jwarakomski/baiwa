@@ -23,7 +23,7 @@ const VIBE_EMOJI: Record<string, string> = {
   hot: "🔥",
 };
 
-function BaiBot({ vibe }: { vibe?: string }) {
+function BaibotMascot({ vibe }: { vibe?: string }) {
   return (
     <div
       className={`wardrobe__bot ${vibe ? `wardrobe__bot--${vibe}` : ""}`}
@@ -38,13 +38,13 @@ function BaiBot({ vibe }: { vibe?: string }) {
         <span className="wardrobe__bot-blush wardrobe__bot-blush--r" />
       </span>
       <span className="wardrobe__bot-body">
-        <span className="wardrobe__bot-badge">B</span>
+        <span className="wardrobe__bot-badge">Bb</span>
       </span>
     </div>
   );
 }
 
-export function WardrobeAdvisor({
+export function BaibotAdvisor({
   current,
   nextPeriod,
   alerts,
@@ -58,10 +58,10 @@ export function WardrobeAdvisor({
 
   if (loading && !advice) {
     return (
-      <aside className="wardrobe wardrobe--loading" aria-label="Wardrobe advisor">
-        <BaiBot />
+      <aside className="wardrobe wardrobe--loading" aria-label="Baibot wardrobe advisor">
+        <BaibotMascot />
         <div className="wardrobe__bubble wardrobe__bubble--muted">
-          Scanning the forecast for outfit ideas...
+          Baibot is scanning the forecast for outfit ideas...
         </div>
       </aside>
     );
@@ -70,10 +70,10 @@ export function WardrobeAdvisor({
   if (!advice) return null;
 
   return (
-    <aside className="wardrobe" aria-label="Wardrobe advisor">
+    <aside className="wardrobe" aria-label="Baibot wardrobe advisor">
       <div className="wardrobe__bot-wrap">
-        <BaiBot vibe={advice.vibe} />
-        <span className="wardrobe__bot-name">Bai</span>
+        <BaibotMascot vibe={advice.vibe} />
+        <span className="wardrobe__bot-name">Baibot</span>
       </div>
 
       <div className="wardrobe__bubble">

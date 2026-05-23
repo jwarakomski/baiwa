@@ -5,7 +5,7 @@ import type {
   GeoLocation,
   WeatherAlert,
 } from "../types/weather";
-import { WardrobeAdvisor } from "./WardrobeAdvisor";
+import { BaibotAdvisor } from "./BaibotAdvisor";
 
 interface Props {
   location: GeoLocation;
@@ -58,7 +58,7 @@ export function CurrentConditionsCard({
             <span className="spinner" />
             Pulling NOAA observation...
           </div>
-          <WardrobeAdvisor
+          <BaibotAdvisor
             current={null}
             nextPeriod={nextPeriod}
             alerts={alerts}
@@ -86,7 +86,7 @@ export function CurrentConditionsCard({
               </div>
             </div>
 
-            <WardrobeAdvisor
+            <BaibotAdvisor
               current={current}
               nextPeriod={nextPeriod}
               alerts={alerts}
