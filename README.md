@@ -22,6 +22,19 @@ npm run dev
 
 Then open http://localhost:5173.
 
+## Deploy (GitHub Pages)
+
+Pushes to `main` deploy automatically via GitHub Actions.
+
+**Live site:** https://jwarakomski.github.io/baiwai/
+
+One-time repo setup (if Pages is not enabled yet):
+
+1. GitHub repo **Settings** → **Pages**
+2. **Build and deployment** → Source: **GitHub Actions**
+
+Optional: add `VITE_ACCUWEATHER_API_KEY` as a repository **secret** and reference it in `.github/workflows/deploy.yml` if you want AccuWeather on the public site (the key will be embedded in the client bundle).
+
 ## Environment
 
 | Variable                     | Required | Notes                                                                   |
