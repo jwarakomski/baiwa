@@ -1,8 +1,4 @@
-import {
-  coordsLocation,
-  formatLocation,
-  reverseGeocode,
-} from "./geocoding";
+import { formatLocation, resolveNearestPlace } from "./geocoding";
 import type { GeoLocation } from "../types/weather";
 
 export type LocationSource = "browser" | "ip" | "default" | "manual";
@@ -39,13 +35,7 @@ function getBrowserPosition(): Promise<GeolocationPosition> {
 async function locateFromBrowser(): Promise<GeoLocation> {
   const position = await getBrowserPosition();
   const { latitude, longitude } = position.coords;
-  try {
-    const named = await reverseGeocode(latitude, longitude);
-    if (named) return named;
-  } catch {
-    // Fall back to raw coordinates if reverse geocoding fails.
-  }
-  return coordsLocation(latitude, longitude);
+  return resolveNearestPlace(latitude, longitude);
 }
 
 interface IpWhoResponse {
@@ -67,13 +57,18 @@ async function locateFromIp(): Promise<GeoLocation> {
   if (!data.success || data.latitude === undefined || data.longitude === undefined) {
     throw new Error(data.message ?? "IP location lookup returned no coordinates.");
   }
-  return {
-    name: data.city?.trim() || "Nearby",
-    region: data.region,
-    country: data.country,
-    latitude: data.latitude,
-    longitude: data.longitude,
-  };
+
+  const named = await resolveNearestPlace(data.latitude, data.longitude);
+  if (named.name.startsWith("Near ")) {
+    return {
+      name: data.city?.trim() || named.name,
+      region: data.region ?? named.region,
+      country: data.country ?? named.country,
+      latitude: data.latitude,
+      longitude: data.longitude,
+    };
+  }
+  return named;
 }
 
 export function locationSourceLabel(source: LocationSource): string {
