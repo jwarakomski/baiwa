@@ -57,16 +57,24 @@ function App() {
   );
 
   const contributorRef = useRef<HTMLElement | null>(null);
+  const forecastAbortRef = useRef<AbortController | null>(null);
 
   const loadForecasts = useCallback(async (loc: GeoLocation) => {
+    forecastAbortRef.current?.abort();
+    const controller = new AbortController();
+    forecastAbortRef.current = controller;
+    const { signal } = controller;
+
     setLoading(true);
     setError(null);
     setNoaa(null);
     setAccu(null);
     const [noaaSettled, accuSettled] = await Promise.allSettled([
-      fetchNoaaForecast(loc),
-      fetchAccuweatherForecast(loc),
+      fetchNoaaForecast(loc, signal),
+      fetchAccuweatherForecast(loc, signal),
     ]);
+
+    if (signal.aborted) return;
 
     if (noaaSettled.status === "fulfilled") {
       setNoaa(noaaSettled.value);
@@ -88,6 +96,9 @@ function App() {
 
   useEffect(() => {
     void loadForecasts(location);
+    return () => {
+      forecastAbortRef.current?.abort();
+    };
   }, [location, loadForecasts]);
 
   const baiwa = useMemo(
@@ -147,7 +158,7 @@ function App() {
             AccuWeather {accuweatherEnabled ? "on" : "off"}
           </span>
           <span className="pill">
-            <span className="pill__dot" /> Baiwa model v0.2
+            <span className="pill__dot" /> Baiwa model v0.3
           </span>
         </div>
       </header>
@@ -213,7 +224,7 @@ function App() {
 
       <footer className="footer">
         Data: NOAA / National Weather Service. Optional comparison: AccuWeather.
-        Baiwa model v0.2 fuses provider agreement with your accuracy feedback.
+        Baiwa model v0.3 fuses provider agreement with your accuracy feedback.
       </footer>
     </div>
   );

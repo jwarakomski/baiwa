@@ -83,12 +83,13 @@ interface NoaaAlertsResponse {
   }>;
 }
 
-async function noaaFetch<T>(url: string): Promise<T> {
+async function noaaFetch<T>(url: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(url, {
     headers: {
       Accept: "application/geo+json",
       "User-Agent": userAgent,
     },
+    signal,
   });
   if (!res.ok) {
     throw new Error(`NOAA request failed: ${res.status} ${res.statusText}`);
@@ -108,9 +109,9 @@ function pointsCacheKey(lat: string, lon: string): string {
 }
 
 function readPointsCache(key: string): NoaaPointsCache | null {
-  if (typeof sessionStorage === "undefined") return null;
+  if (typeof localStorage === "undefined") return null;
   try {
-    const raw = sessionStorage.getItem(key);
+    const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as NoaaPointsCache) : null;
   } catch {
     return null;
@@ -118,9 +119,9 @@ function readPointsCache(key: string): NoaaPointsCache | null {
 }
 
 function writePointsCache(key: string, value: NoaaPointsCache): void {
-  if (typeof sessionStorage === "undefined") return;
+  if (typeof localStorage === "undefined") return;
   try {
-    sessionStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(key, JSON.stringify(value));
   } catch {
     // ignore quota / private-mode errors
   }
@@ -158,18 +159,19 @@ function degreesToCardinal(deg: number | null | undefined): string | null {
 async function fetchCurrent(
   stationsUrl: string,
   cachedObservationUrl: string | undefined,
-  onResolveStation: (observationUrl: string) => void
+  onResolveStation: (observationUrl: string) => void,
+  signal?: AbortSignal
 ): Promise<CurrentConditions | null> {
   try {
     let observationUrl = cachedObservationUrl;
     if (!observationUrl) {
-      const stations = await noaaFetch<NoaaStationsResponse>(stationsUrl);
+      const stations = await noaaFetch<NoaaStationsResponse>(stationsUrl, signal);
       const first = stations.features?.[0];
       if (!first) return null;
       observationUrl = `${first.id}/observations/latest`;
       onResolveStation(observationUrl);
     }
-    const obs = await noaaFetch<NoaaObservationResponse>(observationUrl);
+    const obs = await noaaFetch<NoaaObservationResponse>(observationUrl, signal);
     const props = obs.properties;
     const tempC = props.temperature?.value ?? null;
     const feelsC =
@@ -194,10 +196,13 @@ async function fetchCurrent(
   }
 }
 
-async function fetchAlerts(loc: GeoLocation): Promise<WeatherAlert[]> {
+async function fetchAlerts(
+  loc: GeoLocation,
+  signal?: AbortSignal
+): Promise<WeatherAlert[]> {
   try {
     const url = `${NOAA_BASE}/alerts/active?point=${loc.latitude},${loc.longitude}`;
-    const data = await noaaFetch<NoaaAlertsResponse>(url);
+    const data = await noaaFetch<NoaaAlertsResponse>(url, signal);
     return data.features.map((f) => ({
       id: f.id,
       event: f.properties.event,
@@ -239,7 +244,8 @@ function mapPeriods(
 }
 
 export async function fetchNoaaForecast(
-  loc: GeoLocation
+  loc: GeoLocation,
+  signal?: AbortSignal
 ): Promise<ProviderForecast> {
   // NOAA's grid for a coordinate is stable; cache to ~1km granularity.
   const cacheLat = loc.latitude.toFixed(2);
@@ -255,7 +261,8 @@ export async function fetchNoaaForecast(
     const lat = loc.latitude.toFixed(4);
     const lon = loc.longitude.toFixed(4);
     const points = await noaaFetch<NoaaPointsResponse>(
-      `${NOAA_BASE}/points/${lat},${lon}`
+      `${NOAA_BASE}/points/${lat},${lon}`,
+      signal
     );
     pointsProps = points.properties;
     cached = { points: pointsProps };
@@ -264,17 +271,18 @@ export async function fetchNoaaForecast(
 
   const cacheRef = cached;
   const [daily, hourly, current, alerts] = await Promise.all([
-    noaaFetch<NoaaForecastResponse>(pointsProps.forecast),
-    noaaFetch<NoaaForecastResponse>(pointsProps.forecastHourly),
+    noaaFetch<NoaaForecastResponse>(pointsProps.forecast, signal),
+    noaaFetch<NoaaForecastResponse>(pointsProps.forecastHourly, signal),
     fetchCurrent(
       pointsProps.observationStations,
       cacheRef.observationStationUrl,
       (observationUrl) => {
         cacheRef.observationStationUrl = observationUrl;
         writePointsCache(cacheKey, cacheRef);
-      }
+      },
+      signal
     ),
-    fetchAlerts(loc),
+    fetchAlerts(loc, signal),
   ]);
 
   const dailyPeriods = mapPeriods(daily, "daily", 14);

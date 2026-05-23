@@ -70,7 +70,8 @@ interface AccuDailyForecastResponse {
 
 async function accuFetch<T>(
   path: string,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  signal?: AbortSignal
 ): Promise<T> {
   if (!accuweatherEnabled) {
     throw new Error("AccuWeather is not configured");
@@ -82,6 +83,7 @@ async function accuFetch<T>(
   }
   const res = await fetch(url.toString(), {
     headers: { Accept: "application/json" },
+    signal,
   });
   if (!res.ok) {
     throw new Error(`AccuWeather request failed: ${res.status}`);
@@ -89,10 +91,14 @@ async function accuFetch<T>(
   return (await res.json()) as T;
 }
 
-async function findLocationKey(loc: GeoLocation): Promise<string | null> {
+async function findLocationKey(
+  loc: GeoLocation,
+  signal?: AbortSignal
+): Promise<string | null> {
   const results = await accuFetch<AccuLocationSearchResult[]>(
     "/locations/v1/cities/geoposition/search",
-    { q: `${loc.latitude.toFixed(4)},${loc.longitude.toFixed(4)}` }
+    { q: `${loc.latitude.toFixed(4)},${loc.longitude.toFixed(4)}` },
+    signal
   );
   if (Array.isArray(results)) {
     return results[0]?.Key ?? null;
@@ -173,20 +179,23 @@ function mapDaily(data: AccuDailyForecastResponse): ForecastPeriod[] {
 }
 
 export async function fetchAccuweatherForecast(
-  loc: GeoLocation
+  loc: GeoLocation,
+  signal?: AbortSignal
 ): Promise<ProviderForecast | null> {
   if (!accuweatherEnabled) return null;
   try {
-    const key = await findLocationKey(loc);
+    const key = await findLocationKey(loc, signal);
     if (!key) return null;
     const [currentArr, daily] = await Promise.all([
       accuFetch<AccuCurrentConditions[]>(
         `/currentconditions/v1/${key}`,
-        { details: "true" }
+        { details: "true" },
+        signal
       ),
       accuFetch<AccuDailyForecastResponse>(
         `/forecasts/v1/daily/5day/${key}`,
-        { details: "true" }
+        { details: "true" },
+        signal
       ),
     ]);
     const current = currentArr?.[0] ? mapCurrent(currentArr[0]) : null;
