@@ -49,7 +49,7 @@ export function SplashHero({
 
       <div className="splash__content">
         <span className="splash__eyebrow">
-          <span className="pill__dot" /> Baiwa Weather Lab &middot; v0.3
+          <span className="pill__dot" /> Baiwa Weather Lab &middot; v0.4
         </span>
         <h1 className="splash__title">
           Forecasts that <span className="splash__title-accent">learn</span>{" "}

@@ -158,7 +158,7 @@ function App() {
             AccuWeather {accuweatherEnabled ? "on" : "off"}
           </span>
           <span className="pill">
-            <span className="pill__dot" /> Baiwa model v0.3
+            <span className="pill__dot" /> Baiwa model v0.4
           </span>
         </div>
       </header>
@@ -181,6 +181,7 @@ function App() {
         <CurrentConditionsCard
           location={location}
           current={noaa?.current ?? null}
+          nextPeriod={noaa?.hourly?.[0] ?? noaa?.daily?.[0] ?? null}
           baiwa={baiwa}
           alerts={noaa?.alerts ?? []}
           loading={loading}
@@ -224,7 +225,7 @@ function App() {
 
       <footer className="footer">
         Data: NOAA / National Weather Service. Optional comparison: AccuWeather.
-        Baiwa model v0.3 fuses provider agreement with your accuracy feedback.
+        Baiwa model v0.4 fuses provider agreement with your accuracy feedback.
       </footer>
     </div>
   );

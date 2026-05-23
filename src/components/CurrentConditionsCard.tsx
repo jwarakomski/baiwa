@@ -1,13 +1,16 @@
 import type {
   BaiwaScore,
   CurrentConditions,
+  ForecastPeriod,
   GeoLocation,
   WeatherAlert,
 } from "../types/weather";
+import { WardrobeAdvisor } from "./WardrobeAdvisor";
 
 interface Props {
   location: GeoLocation;
   current: CurrentConditions | null;
+  nextPeriod: ForecastPeriod | null;
   baiwa: BaiwaScore;
   alerts: WeatherAlert[];
   loading: boolean;
@@ -21,6 +24,7 @@ function fmt(value: number | null | undefined, suffix: string): string {
 export function CurrentConditionsCard({
   location,
   current,
+  nextPeriod,
   baiwa,
   alerts,
   loading,
@@ -49,27 +53,46 @@ export function CurrentConditionsCard({
       </div>
 
       {loading && !current ? (
-        <div className="loading">
-          <span className="spinner" />
-          Pulling NOAA observation...
+        <div className="hero__main">
+          <div className="loading">
+            <span className="spinner" />
+            Pulling NOAA observation...
+          </div>
+          <WardrobeAdvisor
+            current={null}
+            nextPeriod={nextPeriod}
+            alerts={alerts}
+            summaryFallback={baiwa.fusedSummary}
+            loading={loading}
+          />
         </div>
       ) : (
         <>
-          <div className="hero__temp">
-            <span className="hero__temp-value">
-              {display !== null ? `${display}\u00b0` : "--"}
-            </span>
-            <div className="hero__temp-meta">
-              <strong>{summary || "--"}</strong>
-              <span>
-                Feels like {fmt(current?.feelsLikeF ?? null, "\u00b0F")}
+          <div className="hero__main">
+            <div className="hero__temp">
+              <span className="hero__temp-value">
+                {display !== null ? `${display}\u00b0` : "--"}
               </span>
-              {current?.observedAt && (
+              <div className="hero__temp-meta">
+                <strong>{summary || "--"}</strong>
                 <span>
-                  Observed {new Date(current.observedAt).toLocaleTimeString()}
+                  Feels like {fmt(current?.feelsLikeF ?? null, "\u00b0F")}
                 </span>
-              )}
+                {current?.observedAt && (
+                  <span>
+                    Observed {new Date(current.observedAt).toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
             </div>
+
+            <WardrobeAdvisor
+              current={current}
+              nextPeriod={nextPeriod}
+              alerts={alerts}
+              summaryFallback={baiwa.fusedSummary}
+              loading={loading}
+            />
           </div>
           <div className="hero__metrics">
             <div className="metric">
