@@ -63,21 +63,27 @@ function App() {
     setError(null);
     setNoaa(null);
     setAccu(null);
-    try {
-      const [noaaResult, accuResult] = await Promise.all([
-        fetchNoaaForecast(loc).catch((err: Error) => {
-          throw new Error(`NOAA: ${err.message}`);
-        }),
-        fetchAccuweatherForecast(loc),
-      ]);
-      setNoaa(noaaResult);
-      setAccu(accuResult);
-      setSelectedPeriod(noaaResult.daily[0] ?? null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Forecast load failed.");
-    } finally {
-      setLoading(false);
+    const [noaaSettled, accuSettled] = await Promise.allSettled([
+      fetchNoaaForecast(loc),
+      fetchAccuweatherForecast(loc),
+    ]);
+
+    if (noaaSettled.status === "fulfilled") {
+      setNoaa(noaaSettled.value);
+      setSelectedPeriod(noaaSettled.value.daily[0] ?? null);
+      setError(null);
+    } else {
+      const message =
+        noaaSettled.reason instanceof Error
+          ? noaaSettled.reason.message
+          : "Forecast load failed.";
+      setError(`NOAA: ${message}`);
     }
+
+    if (accuSettled.status === "fulfilled") {
+      setAccu(accuSettled.value);
+    }
+    setLoading(false);
   }, []);
 
   useEffect(() => {

@@ -28,7 +28,11 @@ export function RadarCard({ station, forecastOffice }: Props) {
   useEffect(() => {
     setErrored(false);
     setCacheBust(Date.now());
-  }, [station, layer]);
+  }, [station]);
+
+  useEffect(() => {
+    setErrored(false);
+  }, [layer]);
 
   const url = useMemo(() => {
     if (station && !errored) return radarUrl(station, layer, cacheBust);

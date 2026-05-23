@@ -121,8 +121,10 @@ function mapCurrent(data: AccuCurrentConditions): CurrentConditions {
   };
 }
 
+const ACCU_DAILY_LIMIT = 7;
+
 function mapDaily(data: AccuDailyForecastResponse): ForecastPeriod[] {
-  return data.DailyForecasts.flatMap((d, idx) => [
+  return data.DailyForecasts.slice(0, ACCU_DAILY_LIMIT).flatMap((d, idx) => [
     {
       id: `accu-daily-day-${d.EpochDate}`,
       provider: "accuweather" as const,

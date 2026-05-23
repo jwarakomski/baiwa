@@ -96,6 +96,36 @@ async function noaaFetch<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+interface NoaaPointsCache {
+  points: NoaaPointsResponse["properties"];
+  observationStationUrl?: string;
+}
+
+const POINTS_CACHE_PREFIX = "baiwa.noaa.points.v1:";
+
+function pointsCacheKey(lat: string, lon: string): string {
+  return `${POINTS_CACHE_PREFIX}${lat},${lon}`;
+}
+
+function readPointsCache(key: string): NoaaPointsCache | null {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as NoaaPointsCache) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writePointsCache(key: string, value: NoaaPointsCache): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore quota / private-mode errors
+  }
+}
+
 function celsiusToF(c: number | null | undefined): number | null {
   if (c === null || c === undefined) return null;
   return Math.round((c * 9) / 5 + 32);
@@ -125,14 +155,21 @@ function degreesToCardinal(deg: number | null | undefined): string | null {
   return dirs[Math.round(((deg % 360) / 45)) % 8];
 }
 
-async function fetchCurrent(stationsUrl: string): Promise<CurrentConditions | null> {
+async function fetchCurrent(
+  stationsUrl: string,
+  cachedObservationUrl: string | undefined,
+  onResolveStation: (observationUrl: string) => void
+): Promise<CurrentConditions | null> {
   try {
-    const stations = await noaaFetch<NoaaStationsResponse>(stationsUrl);
-    const first = stations.features?.[0];
-    if (!first) return null;
-    const obs = await noaaFetch<NoaaObservationResponse>(
-      `${first.id}/observations/latest`
-    );
+    let observationUrl = cachedObservationUrl;
+    if (!observationUrl) {
+      const stations = await noaaFetch<NoaaStationsResponse>(stationsUrl);
+      const first = stations.features?.[0];
+      if (!first) return null;
+      observationUrl = `${first.id}/observations/latest`;
+      onResolveStation(observationUrl);
+    }
+    const obs = await noaaFetch<NoaaObservationResponse>(observationUrl);
     const props = obs.properties;
     const tempC = props.temperature?.value ?? null;
     const feelsC =
@@ -177,9 +214,10 @@ async function fetchAlerts(loc: GeoLocation): Promise<WeatherAlert[]> {
 
 function mapPeriods(
   data: NoaaForecastResponse,
-  prefix: string
+  prefix: string,
+  limit: number
 ): ForecastPeriod[] {
-  return data.properties.periods.map((p) => ({
+  return data.properties.periods.slice(0, limit).map((p) => ({
     id: `${prefix}-${p.number}-${p.startTime}`,
     provider: "noaa",
     name: p.name,
@@ -203,21 +241,44 @@ function mapPeriods(
 export async function fetchNoaaForecast(
   loc: GeoLocation
 ): Promise<ProviderForecast> {
-  const lat = loc.latitude.toFixed(4);
-  const lon = loc.longitude.toFixed(4);
-  const points = await noaaFetch<NoaaPointsResponse>(
-    `${NOAA_BASE}/points/${lat},${lon}`
-  );
+  // NOAA's grid for a coordinate is stable; cache to ~1km granularity.
+  const cacheLat = loc.latitude.toFixed(2);
+  const cacheLon = loc.longitude.toFixed(2);
+  const cacheKey = pointsCacheKey(cacheLat, cacheLon);
 
+  let cached = readPointsCache(cacheKey);
+  let pointsProps: NoaaPointsResponse["properties"];
+
+  if (cached) {
+    pointsProps = cached.points;
+  } else {
+    const lat = loc.latitude.toFixed(4);
+    const lon = loc.longitude.toFixed(4);
+    const points = await noaaFetch<NoaaPointsResponse>(
+      `${NOAA_BASE}/points/${lat},${lon}`
+    );
+    pointsProps = points.properties;
+    cached = { points: pointsProps };
+    writePointsCache(cacheKey, cached);
+  }
+
+  const cacheRef = cached;
   const [daily, hourly, current, alerts] = await Promise.all([
-    noaaFetch<NoaaForecastResponse>(points.properties.forecast),
-    noaaFetch<NoaaForecastResponse>(points.properties.forecastHourly),
-    fetchCurrent(points.properties.observationStations),
+    noaaFetch<NoaaForecastResponse>(pointsProps.forecast),
+    noaaFetch<NoaaForecastResponse>(pointsProps.forecastHourly),
+    fetchCurrent(
+      pointsProps.observationStations,
+      cacheRef.observationStationUrl,
+      (observationUrl) => {
+        cacheRef.observationStationUrl = observationUrl;
+        writePointsCache(cacheKey, cacheRef);
+      }
+    ),
     fetchAlerts(loc),
   ]);
 
-  const dailyPeriods = mapPeriods(daily, "daily").slice(0, 14);
-  const hourlyPeriods = mapPeriods(hourly, "hourly").slice(0, 24);
+  const dailyPeriods = mapPeriods(daily, "daily", 14);
+  const hourlyPeriods = mapPeriods(hourly, "hourly", 24);
 
   return {
     provider: "noaa",
@@ -226,7 +287,7 @@ export async function fetchNoaaForecast(
     hourly: hourlyPeriods,
     alerts,
     warnings: [],
-    radarStation: points.properties.radarStation ?? null,
-    forecastOffice: points.properties.cwa ?? points.properties.gridId ?? null,
+    radarStation: pointsProps.radarStation ?? null,
+    forecastOffice: pointsProps.cwa ?? pointsProps.gridId ?? null,
   };
 }

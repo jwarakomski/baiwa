@@ -61,7 +61,14 @@ function relevantFeedback(
   feedback: AccuracyFeedback[],
   loc: GeoLocation
 ): AccuracyFeedback[] {
+  // 1° latitude ≈ 111km. Longitude spacing shrinks with cos(latitude).
+  const dLatMax = NEAR_RADIUS_KM / 111;
+  const cosLat = Math.cos((loc.latitude * Math.PI) / 180);
+  const dLonMax = dLatMax / Math.max(cosLat, 0.01);
+
   return feedback.filter((entry) => {
+    if (Math.abs(entry.latitude - loc.latitude) > dLatMax) return false;
+    if (Math.abs(entry.longitude - loc.longitude) > dLonMax) return false;
     const distance = haversineKm(loc, {
       latitude: entry.latitude,
       longitude: entry.longitude,
