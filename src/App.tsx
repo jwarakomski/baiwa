@@ -24,6 +24,14 @@ import {
   addContributor,
   loadContributors,
 } from "./services/contributors";
+import {
+  DEFAULT_LOCATION,
+  formatLocation,
+  locationSourceLabel,
+  requestBrowserLocation,
+  resolveUserLocation,
+  type LocationSource,
+} from "./services/location";
 import type {
   AccuracyFeedback,
   Contributor,
@@ -32,16 +40,14 @@ import type {
   ProviderForecast,
 } from "./types/weather";
 
-const DEFAULT_LOCATION: GeoLocation = {
-  name: "Seattle",
-  region: "Washington",
-  country: "United States",
-  latitude: 47.6062,
-  longitude: -122.3321,
-};
+const DEFAULT_LOCATION_FALLBACK = DEFAULT_LOCATION;
 
 function App() {
-  const [location, setLocation] = useState<GeoLocation>(DEFAULT_LOCATION);
+  const [location, setLocation] = useState<GeoLocation | null>(null);
+  const [locationSource, setLocationSource] = useState<LocationSource | null>(
+    null
+  );
+  const [locating, setLocating] = useState(true);
   const [noaa, setNoaa] = useState<ProviderForecast | null>(null);
   const [accu, setAccu] = useState<ProviderForecast | null>(null);
   const [loading, setLoading] = useState(false);
@@ -58,6 +64,26 @@ function App() {
 
   const contributorRef = useRef<HTMLElement | null>(null);
   const forecastAbortRef = useRef<AbortController | null>(null);
+  const locationDetectRef = useRef(false);
+
+  useEffect(() => {
+    if (locationDetectRef.current) return;
+    locationDetectRef.current = true;
+
+    void (async () => {
+      setLocating(true);
+      try {
+        const resolved = await resolveUserLocation();
+        setLocation(resolved.location);
+        setLocationSource(resolved.source);
+      } catch {
+        setLocation(DEFAULT_LOCATION_FALLBACK);
+        setLocationSource("default");
+      } finally {
+        setLocating(false);
+      }
+    })();
+  }, []);
 
   const loadForecasts = useCallback(async (loc: GeoLocation) => {
     forecastAbortRef.current?.abort();
@@ -95,6 +121,7 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!location) return;
     void loadForecasts(location);
     return () => {
       forecastAbortRef.current?.abort();
@@ -102,9 +129,35 @@ function App() {
   }, [location, loadForecasts]);
 
   const baiwa = useMemo(
-    () => computeBaiwaScore(location, noaa, accu, feedback),
+    () =>
+      location
+        ? computeBaiwaScore(location, noaa, accu, feedback)
+        : computeBaiwaScore(DEFAULT_LOCATION_FALLBACK, noaa, accu, feedback),
     [location, noaa, accu, feedback]
   );
+
+  function handleSelectLocation(loc: GeoLocation) {
+    setLocation(loc);
+    setLocationSource("manual");
+  }
+
+  async function handleUseMyLocation() {
+    setLocating(true);
+    setError(null);
+    try {
+      const resolved = await requestBrowserLocation();
+      setLocation(resolved.location);
+      setLocationSource(resolved.source);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not access your device location."
+      );
+    } finally {
+      setLocating(false);
+    }
+  }
 
   function handleSubmitFeedback(
     entry: Omit<AccuracyFeedback, "id" | "createdAt">
@@ -173,10 +226,29 @@ function App() {
 
       <div id="dashboard" />
 
-      <SearchBar onSelect={setLocation} />
+      <SearchBar
+        onSelect={handleSelectLocation}
+        initialQuery={location ? formatLocation(location) : ""}
+        locating={locating}
+        locationSource={locationSource}
+        onUseMyLocation={handleUseMyLocation}
+      />
+
+      {locating && !location && (
+        <div className="locating-banner">
+          <span className="spinner" />
+          Finding your location...
+        </div>
+      )}
+
+      {location && locationSource && (
+        <p className="location-source">{locationSourceLabel(locationSource)}</p>
+      )}
 
       {error && <div className="error">{error}</div>}
 
+      {location && (
+        <>
       <div className="dashboard">
         <CurrentConditionsCard
           location={location}
@@ -184,7 +256,7 @@ function App() {
           nextPeriod={noaa?.hourly?.[0] ?? noaa?.daily?.[0] ?? null}
           baiwa={baiwa}
           alerts={noaa?.alerts ?? []}
-          loading={loading}
+          loading={loading || locating}
         />
         <BaiwaModelCard score={baiwa} />
       </div>
@@ -216,6 +288,8 @@ function App() {
           onClear={handleClearFeedback}
         />
       </div>
+        </>
+      )}
 
       <ContributorSignup
         ref={contributorRef}

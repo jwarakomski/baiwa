@@ -1,13 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { formatLocation, geocode } from "../services/geocoding";
+import type { LocationSource } from "../services/location";
 import type { GeoLocation } from "../types/weather";
 
 interface Props {
   onSelect: (loc: GeoLocation) => void;
   initialQuery?: string;
+  locating?: boolean;
+  locationSource?: LocationSource | null;
+  onUseMyLocation?: () => void;
 }
 
-export function SearchBar({ onSelect, initialQuery = "" }: Props) {
+export function SearchBar({
+  onSelect,
+  initialQuery = "",
+  locating = false,
+  onUseMyLocation,
+}: Props) {
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<GeoLocation[]>([]);
   const [open, setOpen] = useState(false);
@@ -15,6 +24,10 @@ export function SearchBar({ onSelect, initialQuery = "" }: Props) {
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -82,9 +95,20 @@ export function SearchBar({ onSelect, initialQuery = "" }: Props) {
           }}
           onFocus={() => results.length > 0 && setOpen(true)}
         />
-        <button className="btn btn--primary" type="submit" disabled={loading}>
-          {loading ? "Searching..." : "Get Forecast"}
+        <button className="btn btn--primary" type="submit" disabled={loading || locating}>
+          {loading ? "Searching..." : locating ? "Locating..." : "Get Forecast"}
         </button>
+        {onUseMyLocation && (
+          <button
+            className="btn btn--ghost"
+            type="button"
+            disabled={locating}
+            onClick={onUseMyLocation}
+            title="Use device GPS location"
+          >
+            {locating ? "Locating..." : "Use my location"}
+          </button>
+        )}
       </form>
       {error && <div className="error">{error}</div>}
       {open && results.length > 0 && (
