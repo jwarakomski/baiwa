@@ -26,7 +26,7 @@ Then open http://localhost:5173.
 
 Pushes to `main` deploy automatically via GitHub Actions.
 
-**Live site:** https://jwarakomski.github.io/baiwai/
+**Live site:** https://jwarakomski.github.io/baiwa/
 
 One-time repo setup (if Pages is not enabled yet):
 

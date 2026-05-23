@@ -34,7 +34,7 @@ jobs:
         run: npm run build
         env:
           GITHUB_PAGES: "true"
-          VITE_NOAA_USER_AGENT: "(baiwa-weather, https://github.com/jwarakomski/baiwai)"
+          VITE_NOAA_USER_AGENT: "(baiwa-weather, https://github.com/jwarakomski/baiwa)"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
