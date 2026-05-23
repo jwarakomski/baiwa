@@ -147,7 +147,7 @@ function App() {
             AccuWeather {accuweatherEnabled ? "on" : "off"}
           </span>
           <span className="pill">
-            <span className="pill__dot" /> Baiwa model v0.1
+            <span className="pill__dot" /> Baiwa model v0.2
           </span>
         </div>
       </header>
@@ -213,7 +213,7 @@ function App() {
 
       <footer className="footer">
         Data: NOAA / National Weather Service. Optional comparison: AccuWeather.
-        Baiwa model v0.1 fuses provider agreement with your accuracy feedback.
+        Baiwa model v0.2 fuses provider agreement with your accuracy feedback.
       </footer>
     </div>
   );
