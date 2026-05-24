@@ -9,7 +9,7 @@ import { SplashHero } from "./components/SplashHero";
 import { RadarCard } from "./components/RadarCard";
 import { ContributorSignup } from "./components/ContributorSignup";
 import { DonateButton } from "./components/DonateButton";
-import { FloatingDonate } from "./components/FloatingDonate";
+import { DonateCallout } from "./components/DonateCallout";
 import {
   accuweatherEnabled,
   fetchAccuweatherForecast,
@@ -264,6 +264,8 @@ function App() {
         <BaiwaModelCard score={baiwa} />
       </div>
 
+      <DonateCallout />
+
       <RadarCard
         station={noaa?.radarStation}
         forecastOffice={noaa?.forecastOffice}
@@ -301,13 +303,12 @@ function App() {
       />
 
       <footer className="footer">
+        <DonateButton />
         <p className="footer__copy">
           Data: NOAA / National Weather Service. Optional comparison: AccuWeather.
           Baiwa model v0.4 fuses provider agreement with your accuracy feedback.
         </p>
       </footer>
-
-      <FloatingDonate />
     </div>
   );
 }
