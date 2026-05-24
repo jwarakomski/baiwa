@@ -8,6 +8,7 @@ import { FeedbackPanel } from "./components/FeedbackPanel";
 import { SplashHero } from "./components/SplashHero";
 import { RadarCard } from "./components/RadarCard";
 import { ContributorSignup } from "./components/ContributorSignup";
+import { DonateButton } from "./components/DonateButton";
 import {
   accuweatherEnabled,
   fetchAccuweatherForecast,
@@ -291,6 +292,13 @@ function App() {
         </>
       )}
 
+      <section className="donate-band" aria-label="Support Baiwa">
+        <p className="donate-band__text">
+          Help keep Baiwa Weather growing — forecasts, radar, and the Baibot advisor.
+        </p>
+        <DonateButton size="large" />
+      </section>
+
       <ContributorSignup
         ref={contributorRef}
         contributors={contributors}
@@ -298,8 +306,11 @@ function App() {
       />
 
       <footer className="footer">
-        Data: NOAA / National Weather Service. Optional comparison: AccuWeather.
-        Baiwa model v0.4 fuses provider agreement with your accuracy feedback.
+        <DonateButton className="footer__donate" />
+        <p className="footer__copy">
+          Data: NOAA / National Weather Service. Optional comparison: AccuWeather.
+          Baiwa model v0.4 fuses provider agreement with your accuracy feedback.
+        </p>
       </footer>
     </div>
   );

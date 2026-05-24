@@ -90,11 +90,46 @@ button {
 }
 
 .header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px 24px;
+}
+
+.header .brand {
+  justify-self: start;
+}
+
+.header__donate {
+  justify-self: center;
+}
+
+.header__meta {
+  justify-self: end;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  gap: 12px;
   flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+@media (max-width: 900px) {
+  .header {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .header .brand,
+  .header__donate,
+  .header__meta {
+    justify-self: center;
+  }
+
+  .header__meta {
+    justify-content: center;
+  }
 }
 
 .brand {
@@ -151,12 +186,80 @@ button {
   letter-spacing: 0.16em;
 }
 
-.header__meta {
-  display: flex;
+/* Donate button (Stripe Payment Link) */
+
+.donate-btn {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  font-size: 13px;
+  justify-content: center;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(180deg, #ff4d4d 0%, #d91c1c 100%);
+  border: 1px solid rgba(255, 120, 120, 0.55);
+  box-shadow:
+    0 4px 18px -4px rgba(220, 40, 40, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    filter 120ms ease;
+}
+
+.donate-btn:hover {
+  color: #fff;
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow:
+    0 8px 24px -6px rgba(220, 40, 40, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.donate-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+.donate-btn--large {
+  padding: 14px 32px;
+  font-size: 15px;
+}
+
+.donate-band {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 28px 24px;
+  text-align: center;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 77, 77, 0.12),
+    rgba(220, 28, 28, 0.06)
+  );
+  border: 1px solid rgba(255, 100, 100, 0.22);
+}
+
+.donate-band__text {
+  margin: 0;
+  max-width: 480px;
+  font-size: 15px;
+  line-height: 1.5;
   color: var(--text-soft);
+}
+
+.footer {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
 .pill {
@@ -877,11 +980,13 @@ button {
   margin: 0 0 10px;
 }
 
-.footer {
-  margin-top: 24px;
+.footer__copy {
+  margin: 0;
   font-size: 12px;
   color: var(--text-mute);
   text-align: center;
+  max-width: 640px;
+  line-height: 1.5;
 }
 
 .icon-row {
