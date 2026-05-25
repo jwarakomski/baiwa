@@ -1,8 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// GitHub Pages project site: https://jwarakomski.github.io/baiwa/
-const base = process.env.GITHUB_PAGES === "true" ? "/baiwa/" : "/";
+// baiwa.org is served from /. Set VITE_BASE_PATH=/baiwa/ only for a subpath deploy without a custom domain.
+const base = process.env.VITE_BASE_PATH ?? "/";
 
 export default defineConfig({
   base,
